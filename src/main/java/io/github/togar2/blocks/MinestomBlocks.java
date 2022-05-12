@@ -28,6 +28,10 @@ public class MinestomBlocks {
 		return PlaceSounds.node();
 	}
 	
+	public static EventNode<PlayerEvent> moveSounds() {
+		return MoveSounds.node();
+	}
+	
 	public static void init() {
 		String path = "./generated-block-groups.txt";
 		//try (InputStream stream = MinestomBlocks.class.getResourceAsStream(path)) {
