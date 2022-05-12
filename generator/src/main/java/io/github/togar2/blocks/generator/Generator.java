@@ -3,6 +3,7 @@ package io.github.togar2.blocks.generator;
 import com.google.gson.*;
 import io.github.togar2.blocks.BlockSoundGroup;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.item.Material;
 import net.minestom.server.sound.SoundEvent;
 
 import java.io.*;
@@ -18,19 +19,47 @@ public class Generator {
 	
 	public static void main(String[] args) throws IOException {
 		Files.deleteIfExists(Path.of("./generated-block-groups.txt"));
+		Files.deleteIfExists(Path.of("./generated-item-tiers.txt"));
 		
 		try (
-				InputStream stream = Generator.class.getResourceAsStream("/1_18_2_blocks.json");
-				OutputStream outputStream = new FileOutputStream("./generated-block-groups.txt");
-				OutputStreamWriter writer = new OutputStreamWriter(outputStream)
+				InputStream blockStream = Generator.class.getResourceAsStream("/1_18_2_blocks.json");
+				InputStream itemStream = Generator.class.getResourceAsStream("/1_18_2_items.json");
+				OutputStream blockOutputStream = new FileOutputStream("./generated-block-groups.txt");
+				OutputStream itemOutputStream = new FileOutputStream("./generated-item-tiers.txt");
+				OutputStreamWriter blockWriter = new OutputStreamWriter(blockOutputStream);
+				OutputStreamWriter itemWriter = new OutputStreamWriter(itemOutputStream)
 		) {
-			if (stream == null) {
+			if (blockStream == null || itemStream == null) {
 				System.err.println("Resource is null");
 				return;
 			}
 			
-			JsonObject json = GSON.fromJson(new InputStreamReader(stream), JsonObject.class);
-			json.entrySet().forEach(entry -> {
+			// ITEMS
+			JsonObject itemJson = GSON.fromJson(new InputStreamReader(itemStream), JsonObject.class);
+			itemJson.entrySet().forEach(entry -> {
+				String namespace = entry.getKey();
+				
+				if (Material.fromNamespaceId(namespace) == null) {
+					System.err.println("Could not find item " + namespace);
+					return;
+				}
+				
+				JsonObject itemObject = entry.getValue().getAsJsonObject();
+				JsonObject itemData = itemObject.getAsJsonObject("specificItemData");
+				if (itemData == null || !itemData.has("tieredItemProperties")) return;
+				JsonObject tieredItemProperties = itemData.getAsJsonObject("tieredItemProperties");
+				String tier = tieredItemProperties.get("tier").getAsString();
+				
+				try {
+					itemWriter.write(namespace + " " + tier + "\n");
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			
+			// BLOCKS
+			JsonObject blockJson = GSON.fromJson(new InputStreamReader(blockStream), JsonObject.class);
+			blockJson.entrySet().forEach(entry -> {
 				String namespace = entry.getKey();
 				
 				if (Block.fromNamespaceId(namespace) == null) {
@@ -44,6 +73,7 @@ public class Generator {
 				for (JsonElement element : states) {
 					JsonObject propertiesObject = element.getAsJsonObject().getAsJsonObject("properties");
 					JsonObject sounds = element.getAsJsonObject().getAsJsonObject("sounds");
+					boolean toolRequired = element.getAsJsonObject().get("toolRequired").getAsBoolean();
 					
 					Map<String, String> properties = new HashMap<>();
 					propertiesObject.keySet().forEach(property -> properties.put(property,
@@ -108,7 +138,7 @@ public class Generator {
 					if (!properties.isEmpty()) propertyString.deleteCharAt(propertyString.length() - 1);
 					
 					try {
-						writer.write(namespace + " " + propertyString + " " + groupFieldName + "\n");
+						blockWriter.write(namespace + " " + propertyString + " " + groupFieldName + " " + toolRequired + "\n");
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}
