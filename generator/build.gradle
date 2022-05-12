@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+group 'io.github.togar2'
+version '1.0'
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    implementation rootProject
+
+    implementation 'com.github.Minestom:Minestom:e4de03ab1a'
+    implementation 'de.articdive:articdata:1.18.2-25e366e2'
+}
