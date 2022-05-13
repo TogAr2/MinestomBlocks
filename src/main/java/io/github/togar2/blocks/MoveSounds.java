@@ -55,8 +55,8 @@ class MoveSounds {
 	private static Point getLandingPos(Player player, Pos position) {
 		position = position.add(0, -0.2, 0);
 		if (Objects.requireNonNull(player.getInstance()).getBlock(position).isAir()) {
-			position = position.add(0, -1, 0);
-			Block block = player.getInstance().getBlock(position);
+			Pos other = position.add(0, -1, 0);
+			Block block = player.getInstance().getBlock(other);
 			net.minestom.server.gamedata.tags.Tag fences = MinecraftServer.getTagManager()
 					.getTag(net.minestom.server.gamedata.tags.Tag.BasicType.BLOCKS, "minecraft:fences");
 			net.minestom.server.gamedata.tags.Tag walls = MinecraftServer.getTagManager()
@@ -67,7 +67,7 @@ class MoveSounds {
 			assert walls != null;
 			assert fenceGates != null;
 			if (fences.contains(block.namespace()) || walls.contains(block.namespace()) || fenceGates.contains(block.namespace())) {
-				return position;
+				return other;
 			}
 		}
 		
