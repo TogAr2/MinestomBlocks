@@ -9,6 +9,10 @@ The maven repository is available on [jitpack](https://jitpack.io/#TogAr2/Minest
 ## Table of Contents
 
 - [Features](#features)
+- [Usage](#usage)
+- [Integration](#integration)
+- [How it works](#how-it-works)
+- [Contributing](#contributing)
 
 ## Features
 
