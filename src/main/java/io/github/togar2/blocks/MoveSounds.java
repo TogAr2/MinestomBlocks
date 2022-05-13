@@ -35,15 +35,18 @@ class MoveSounds {
 				net.minestom.server.gamedata.tags.Tag tag = MinecraftServer.getTagManager()
 						.getTag(net.minestom.server.gamedata.tags.Tag.BasicType.BLOCKS, "minecraft:inside_step_sound_blocks");
 				assert tag != null;
-				BlockSoundGroup group = MinestomBlocks.getSoundGroup(tag.contains(inside.namespace()) ? inside : instance.getBlock(landingPos));
-				player.getViewersAsAudience().playSound(Sound.sound(
-						group.stepSound(),
-						Sound.Source.PLAYER,
-						group.volume() * 0.15f,
-						group.pitch()
-				), player);
-				
-				distanceTraveled = 0;
+				Block stepBlock = tag.contains(inside.namespace()) ? inside : instance.getBlock(landingPos);
+				if (!stepBlock.isAir()) {
+					BlockSoundGroup group = MinestomBlocks.getSoundGroup(stepBlock);
+					player.getViewersAsAudience().playSound(Sound.sound(
+							group.stepSound(),
+							Sound.Source.PLAYER,
+							group.volume() * 0.15f,
+							group.pitch()
+					), player);
+					
+					distanceTraveled = 0;
+				}
 			}
 			
 			player.setTag(DISTANCE_TRAVELED, distanceTraveled);
