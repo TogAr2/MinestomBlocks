@@ -1,10 +1,12 @@
 package io.github.togar2.blocks;
 
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.trait.EntityEvent;
 import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -25,7 +27,7 @@ public class MinestomBlocks {
 	}
 	
 	public static boolean requiresTool(@NotNull Block block) {
-		return REQUIRES_TOOL.get(block);
+		return REQUIRES_TOOL.getOrDefault(block, true);
 	}
 	
 	public static @Nullable ToolTier getToolTier(@NotNull Material material) {
@@ -44,7 +46,13 @@ public class MinestomBlocks {
 		return MoveSounds.node();
 	}
 	
+	public static EventNode<PlayerEvent> breakAnimation() {
+		return BreakAnimation.node();
+	}
+	
 	public static void init() {
+		MinecraftServer.getPacketListenerManager().setListener(ClientPlayerDiggingPacket.class, CustomPlayerDiggingListener::listener);
+		
 		String blockPath = "/generated-block-groups.txt";
 		String itemPath = "/generated-item-tiers.txt";
 		try (

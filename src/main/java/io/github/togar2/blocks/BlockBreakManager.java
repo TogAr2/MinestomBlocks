@@ -2,8 +2,12 @@ package io.github.togar2.blocks;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.EventDispatcher;
+import net.minestom.server.event.player.PlayerStartDiggingEvent;
 import net.minestom.server.gamedata.tags.Tag;
 import net.minestom.server.gamedata.tags.TagManager;
 import net.minestom.server.instance.Instance;
@@ -11,14 +15,17 @@ import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.Enchantment;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
+import net.minestom.server.network.packet.server.play.AcknowledgePlayerDiggingPacket;
 import net.minestom.server.network.packet.server.play.BlockBreakAnimationPacket;
 import net.minestom.server.potion.PotionEffect;
 import net.minestom.server.potion.TimedPotion;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
 
-public class BlockBreakManager {
+class BlockBreakManager {
 	private boolean mining;
 	private int miningStartTime;
 	private Point miningPos = Vec.ZERO;
@@ -56,6 +63,103 @@ public class BlockBreakManager {
 		}
 	}
 	
+	public CustomPlayerDiggingListener.DiggingResult startDigging(Player player, Instance instance, Point blockPosition) {
+		final Block block = instance.getBlock(blockPosition);
+		final GameMode gameMode = player.getGameMode();
+		
+		// Prevent spectators and check players in adventure mode
+		if (shouldPreventBreaking(player, block)) return new CustomPlayerDiggingListener.DiggingResult(block, false);
+		if (gameMode == GameMode.CREATIVE) return breakBlock(instance, player, blockPosition, block);
+		
+		// Survival digging
+		miningStartTime = tickCounter;
+		double delta = 1;
+		if (!block.isAir()) {
+			delta = getBlockBreakingProgress(player, block);
+		}
+		if (player.isInstantBreak() || (!block.isAir() && delta >= 1)) {
+			// Instant break
+			return breakBlock(instance, player, blockPosition, block);
+		} else {
+			if (mining) {
+				// Cancel previous
+				player.sendPacket(new AcknowledgePlayerDiggingPacket(blockPosition, instance.getBlock(miningPos),
+						ClientPlayerDiggingPacket.Status.STARTED_DIGGING, false));
+			}
+			
+			mining = true;
+			miningPos = blockPosition;
+			blockBreakingStage = (byte) (delta * 10);
+			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, blockBreakingStage));
+			
+			PlayerStartDiggingEvent playerStartDiggingEvent = new PlayerStartDiggingEvent(player, block, blockPosition);
+			EventDispatcher.call(playerStartDiggingEvent);
+			return new CustomPlayerDiggingListener.DiggingResult(block, !playerStartDiggingEvent.isCancelled());
+		}
+	}
+	
+	public CustomPlayerDiggingListener.DiggingResult finishDigging(Player player, Instance instance, Point blockPosition) {
+		final Block block = instance.getBlock(blockPosition);
+		
+		if (block.isAir() || !blockPosition.equals(miningPos) || shouldPreventBreaking(player, block))
+			return new CustomPlayerDiggingListener.DiggingResult(block, false);
+		
+		int ticksMining = tickCounter - miningStartTime;
+		double progress = getBlockBreakingProgress(player, block) * (ticksMining + 1);
+		if (progress > 0.7) {
+			mining = false;
+			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, (byte) -1));
+			return breakBlock(instance, player, blockPosition, block);
+		}
+		if (!failedToMine) {
+			mining = false;
+			failedToMine = true;
+			failedMiningPos = blockPosition;
+			failedMiningStartTime = miningStartTime;
+		}
+		
+		return new CustomPlayerDiggingListener.DiggingResult(block, false);
+	}
+	
+	public CustomPlayerDiggingListener.DiggingResult cancelDigging(Player player, Instance instance, Point blockPosition) {
+		mining = false;
+		player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), blockPosition, (byte) -1));
+		
+		final Block block = instance.getBlock(blockPosition);
+		return new CustomPlayerDiggingListener.DiggingResult(block, true);
+	}
+	
+	private boolean shouldPreventBreaking(@NotNull Player player, Block block) {
+		if (player.getGameMode() == GameMode.SPECTATOR) {
+			// Spectators can't break blocks
+			return true;
+		} else if (player.getGameMode() == GameMode.ADVENTURE) {
+			// Check if the item can break the block with the current item
+			final ItemStack itemInMainHand = player.getItemInMainHand();
+			return !itemInMainHand.meta().getCanDestroy().contains(block);
+		}
+		
+		return false;
+	}
+	
+	private CustomPlayerDiggingListener.DiggingResult breakBlock(Instance instance,
+	                                                              Player player,
+	                                                              Point blockPosition, Block previousBlock) {
+		// Unverified block break, client is fully responsible
+		final boolean success = instance.breakBlock(player, blockPosition);
+		final Block updatedBlock = instance.getBlock(blockPosition);
+		if (!success) {
+			if (previousBlock.isSolid()) {
+				final Pos playerPosition = player.getPosition();
+				// Teleport the player back if he broke a solid block just below him
+				if (playerPosition.sub(0, 1, 0).samePoint(blockPosition)) {
+					player.teleport(playerPosition);
+				}
+			}
+		}
+		return new CustomPlayerDiggingListener.DiggingResult(updatedBlock, success);
+	}
+	
 	private double continueMining(Player player, Block block, Point pos, int startTime) {
 		int ticksMining = tickCounter - startTime;
 		double progress = getBlockBreakingProgress(player, block) * (double) (ticksMining + 1);
@@ -69,7 +173,7 @@ public class BlockBreakManager {
 	
 	private double getBlockBreakingProgress(Player player, Block block) {
 		double hardness = block.registry().hardness();
-		if (hardness == -1) return 0;
+		if (hardness == -1 || hardness == 0) return 0;
 		int division = (!MinestomBlocks.requiresTool(block)
 				|| isItemEffective(player.getItemInMainHand().material(), block)) ? 30 : 100;
 		return getBlockBreakingSpeed(player, block) / hardness / (double) division;
@@ -142,19 +246,19 @@ public class BlockBreakManager {
 		
 		int miningLevel = tier.getMiningLevel();
 		TagManager tags = MinecraftServer.getTagManager();
-		if (miningLevel < ToolTier.DIAMOND.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:needs_diamond_tool")).contains(block.namespace())) return false;
-		if (miningLevel < ToolTier.IRON.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:needs_iron_tool")).contains(block.namespace())) return false;
-		if (miningLevel < ToolTier.STONE.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:needs_stone_tool")).contains(block.namespace())) return false;
+		if (miningLevel < ToolTier.DIAMOND.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:needs_diamond_tool")).contains(block.namespace())) return false;
+		if (miningLevel < ToolTier.IRON.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:needs_iron_tool")).contains(block.namespace())) return false;
+		if (miningLevel < ToolTier.STONE.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:needs_stone_tool")).contains(block.namespace())) return false;
 		
 		return getEffectiveTag(material).contains(block.namespace());
 	}
 	
 	private Tag getEffectiveTag(Material material) {
 		TagManager tags = MinecraftServer.getTagManager();
-		if (material.name().contains("axe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:mineable/axe"));
-		if (material.name().contains("hoe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:mineable/hoe"));
-		if (material.name().contains("pickaxe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:mineable/pickaxe"));
-		else return Objects.requireNonNull(tags.getTag(Tag.BasicType.ITEMS, "minecraft:mineable/shovel"));
+		if (material.name().contains("pickaxe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/pickaxe"));
+		if (material.name().contains("axe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/axe"));
+		if (material.name().contains("hoe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/hoe"));
+		else return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/shovel"));
 	}
 	
 	private void tryBreakBlock(Point failedMiningPoint) {

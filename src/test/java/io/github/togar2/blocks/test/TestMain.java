@@ -25,6 +25,7 @@ public class TestMain {
 		MinecraftServer.getGlobalEventHandler().addChild(MinestomBlocks.fallSounds());
 		MinecraftServer.getGlobalEventHandler().addChild(MinestomBlocks.placeSounds());
 		MinecraftServer.getGlobalEventHandler().addChild(MinestomBlocks.moveSounds());
+		MinecraftServer.getGlobalEventHandler().addChild(MinestomBlocks.breakAnimation());
 		
 		MinecraftServer.getCommandManager().register(new GameModeCommand());
 		
