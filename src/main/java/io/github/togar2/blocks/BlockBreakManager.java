@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.Objects;
 
+@SuppressWarnings("UnstableApiUsage")
 class BlockBreakManager {
 	private boolean mining;
 	private int miningStartTime;
@@ -46,9 +47,9 @@ class BlockBreakManager {
 				failedToMine = false;
 			} else {
 				double progress = continueMining(player, block, failedMiningPos, failedMiningStartTime);
-				if (progress >= 1.0f) {
+				if (progress >= 1) {
 					failedToMine = false;
-					tryBreakBlock(failedMiningPos);
+					breakBlock(instance, player, failedMiningPos, block);
 				}
 			}
 		} else if (mining) {
@@ -71,6 +72,10 @@ class BlockBreakManager {
 		if (shouldPreventBreaking(player, block)) return new CustomPlayerDiggingListener.DiggingResult(block, false);
 		if (gameMode == GameMode.CREATIVE) return breakBlock(instance, player, blockPosition, block);
 		
+		PlayerStartDiggingEvent playerStartDiggingEvent = new PlayerStartDiggingEvent(player, block, blockPosition);
+		EventDispatcher.call(playerStartDiggingEvent);
+		if (playerStartDiggingEvent.isCancelled()) return new CustomPlayerDiggingListener.DiggingResult(block, false);
+		
 		// Survival digging
 		miningStartTime = tickCounter;
 		double delta = 1;
@@ -92,9 +97,7 @@ class BlockBreakManager {
 			blockBreakingStage = (byte) (delta * 10);
 			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, blockBreakingStage));
 			
-			PlayerStartDiggingEvent playerStartDiggingEvent = new PlayerStartDiggingEvent(player, block, blockPosition);
-			EventDispatcher.call(playerStartDiggingEvent);
-			return new CustomPlayerDiggingListener.DiggingResult(block, !playerStartDiggingEvent.isCancelled());
+			return new CustomPlayerDiggingListener.DiggingResult(block, true);
 		}
 	}
 	
@@ -145,7 +148,6 @@ class BlockBreakManager {
 	private CustomPlayerDiggingListener.DiggingResult breakBlock(Instance instance,
 	                                                              Player player,
 	                                                              Point blockPosition, Block previousBlock) {
-		// Unverified block break, client is fully responsible
 		final boolean success = instance.breakBlock(player, blockPosition);
 		final Block updatedBlock = instance.getBlock(blockPosition);
 		if (!success) {
@@ -259,9 +261,5 @@ class BlockBreakManager {
 		if (material.name().contains("axe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/axe"));
 		if (material.name().contains("hoe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/hoe"));
 		else return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/shovel"));
-	}
-	
-	private void tryBreakBlock(Point failedMiningPoint) {
-	
 	}
 }

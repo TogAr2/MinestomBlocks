@@ -9,6 +9,7 @@ import net.minestom.server.listener.PlayerDiggingListener;
 import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
 import net.minestom.server.network.packet.server.play.AcknowledgePlayerDiggingPacket;
 
+@SuppressWarnings("UnstableApiUsage")
 class CustomPlayerDiggingListener {
 	public static void listener(ClientPlayerDiggingPacket packet, Player player) {
 		final ClientPlayerDiggingPacket.Status status = packet.status();
@@ -21,29 +22,17 @@ class CustomPlayerDiggingListener {
 		
 		final Point blockPosition = packet.blockPosition();
 		final Instance instance = player.getInstance();
-		if (instance == null) return;
+		if (instance == null || !instance.isChunkLoaded(blockPosition)) return;
 		
 		final Block block = instance.getBlock(blockPosition);
-		BreakManagerEvent breakManagerEvent = new BreakManagerEvent(player, block, blockPosition);
-		EventDispatcher.call(breakManagerEvent);
-		if (!breakManagerEvent.delegateManager()) {
+		PlayerDiggingActionEvent playerDiggingActionEvent = new PlayerDiggingActionEvent(player, block, blockPosition, status);
+		EventDispatcher.call(playerDiggingActionEvent);
+		if (playerDiggingActionEvent.getStatus() == null) {
 			PlayerDiggingListener.playerDiggingListener(packet, player); // Delegate to minestom default
 			return;
 		}
 		
-		final BlockBreakManager manager = BreakAnimation.getManager(player);
-		
-		DiggingResult diggingResult;
-		if (status == ClientPlayerDiggingPacket.Status.STARTED_DIGGING) {
-			if (!instance.isChunkLoaded(blockPosition)) return;
-			diggingResult = manager.startDigging(player, instance, blockPosition);
-		} else if (status == ClientPlayerDiggingPacket.Status.CANCELLED_DIGGING) {
-			if (!instance.isChunkLoaded(blockPosition)) return;
-			diggingResult = manager.cancelDigging(player, instance, blockPosition);
-		} else { // Finished digging
-			if (!instance.isChunkLoaded(blockPosition)) return;
-			diggingResult = manager.finishDigging(player, instance, blockPosition);
-		}
+		DiggingResult diggingResult = playerDiggingActionEvent.getHandler().handle(player, instance, blockPosition);
 		
 		// Acknowledge start/cancel/finish digging status
 		if (diggingResult != null) {
