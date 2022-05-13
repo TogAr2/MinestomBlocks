@@ -1,6 +1,7 @@
 package io.github.togar2.blocks;
 
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.event.EventFilter;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.trait.EntityEvent;
 import net.minestom.server.event.trait.PlayerEvent;
@@ -32,6 +33,16 @@ public class MinestomBlocks {
 	
 	public static @Nullable ToolTier getToolTier(@NotNull Material material) {
 		return TOOL_TIER.get(material);
+	}
+	
+	public static EventNode<EntityEvent> events() {
+		EventNode<EntityEvent> node = EventNode.type("minestom-blocks", EventFilter.ENTITY);
+		node.addChild(fallSounds());
+		node.addChild(placeSounds());
+		node.addChild(moveSounds());
+		node.addChild(breakAnimation());
+		
+		return node;
 	}
 	
 	public static EventNode<EntityEvent> fallSounds() {
