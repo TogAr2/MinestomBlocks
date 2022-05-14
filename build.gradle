@@ -14,5 +14,6 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.Minestom:Minestom:e4de03ab1a'
+    compileOnly 'com.github.Minestom:Minestom:e4de03ab1a'
+    testImplementation 'com.github.Minestom:Minestom:e4de03ab1a'
 }
