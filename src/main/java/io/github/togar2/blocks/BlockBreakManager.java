@@ -1,6 +1,5 @@
 package io.github.togar2.blocks;
 
-import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -9,7 +8,6 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventDispatcher;
 import net.minestom.server.event.player.PlayerStartDiggingEvent;
 import net.minestom.server.gamedata.tags.Tag;
-import net.minestom.server.gamedata.tags.TagManager;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.Enchantment;
@@ -23,7 +21,6 @@ import net.minestom.server.potion.TimedPotion;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
-import java.util.Objects;
 
 @SuppressWarnings("UnstableApiUsage")
 class BlockBreakManager {
