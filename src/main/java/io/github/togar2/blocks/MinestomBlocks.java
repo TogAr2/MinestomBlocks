@@ -70,7 +70,6 @@ public class MinestomBlocks {
 				InputStream blockStream = MinestomBlocks.class.getResourceAsStream(blockPath);
 				InputStream itemStream = MinestomBlocks.class.getResourceAsStream(itemPath)
 		) {
-		//try (InputStream stream = new FileInputStream(path)) {
 			if (blockStream == null) throw new IOException("Could not find resource '" + blockPath + "'");
 			if (itemStream == null) throw new IOException("Could not find resource '" + itemPath + "'");
 			
