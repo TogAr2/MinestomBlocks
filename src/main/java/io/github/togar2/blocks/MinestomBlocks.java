@@ -62,6 +62,7 @@ public class MinestomBlocks {
 	}
 	
 	public static void init() {
+		GameTagInstances.init();
 		MinecraftServer.getPacketListenerManager().setListener(ClientPlayerDiggingPacket.class, CustomPlayerDiggingListener::listener);
 		
 		String blockPath = "/generated-block-groups.txt";

@@ -1,7 +1,6 @@
 package io.github.togar2.blocks;
 
 import net.kyori.adventure.sound.Sound;
-import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -32,10 +31,8 @@ class MoveSounds {
 			if (distanceTraveled > 1) {
 				Point landingPos = getLandingPos(player, event.getNewPosition());
 				Block inside = instance.getBlock(landingPos.add(0, 1, 0));
-				net.minestom.server.gamedata.tags.Tag tag = MinecraftServer.getTagManager()
-						.getTag(net.minestom.server.gamedata.tags.Tag.BasicType.BLOCKS, "minecraft:inside_step_sound_blocks");
-				assert tag != null;
-				Block stepBlock = tag.contains(inside.namespace()) ? inside : instance.getBlock(landingPos);
+				Block stepBlock = GameTagInstances.INSIDE_STEP_SOUND.contains(inside.namespace())
+						? inside : instance.getBlock(landingPos);
 				if (!stepBlock.isAir()) {
 					BlockSoundGroup group = MinestomBlocks.getSoundGroup(stepBlock);
 					player.getViewersAsAudience().playSound(Sound.sound(
@@ -60,16 +57,9 @@ class MoveSounds {
 		if (Objects.requireNonNull(player.getInstance()).getBlock(position).isAir()) {
 			Pos other = position.add(0, -1, 0);
 			Block block = player.getInstance().getBlock(other);
-			net.minestom.server.gamedata.tags.Tag fences = MinecraftServer.getTagManager()
-					.getTag(net.minestom.server.gamedata.tags.Tag.BasicType.BLOCKS, "minecraft:fences");
-			net.minestom.server.gamedata.tags.Tag walls = MinecraftServer.getTagManager()
-					.getTag(net.minestom.server.gamedata.tags.Tag.BasicType.BLOCKS, "minecraft:walls");
-			net.minestom.server.gamedata.tags.Tag fenceGates = MinecraftServer.getTagManager()
-					.getTag(net.minestom.server.gamedata.tags.Tag.BasicType.BLOCKS, "minecraft:fence_gates");
-			assert fences != null;
-			assert walls != null;
-			assert fenceGates != null;
-			if (fences.contains(block.namespace()) || walls.contains(block.namespace()) || fenceGates.contains(block.namespace())) {
+			if (GameTagInstances.FENCES.contains(block.namespace())
+					|| GameTagInstances.WALLS.contains(block.namespace())
+					|| GameTagInstances.FENCE_GATES.contains(block.namespace())) {
 				return other;
 			}
 		}

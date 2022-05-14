@@ -247,19 +247,17 @@ class BlockBreakManager {
 		if (material.name().contains("shears")) return block.compare(Block.COBWEB) || block.compare(Block.REDSTONE_WIRE) || block.compare(Block.TRIPWIRE);
 		
 		int miningLevel = tier.getMiningLevel();
-		TagManager tags = MinecraftServer.getTagManager();
-		if (miningLevel < ToolTier.DIAMOND.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:needs_diamond_tool")).contains(block.namespace())) return false;
-		if (miningLevel < ToolTier.IRON.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:needs_iron_tool")).contains(block.namespace())) return false;
-		if (miningLevel < ToolTier.STONE.getMiningLevel() && Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:needs_stone_tool")).contains(block.namespace())) return false;
+		if (miningLevel < ToolTier.DIAMOND.getMiningLevel() && GameTagInstances.NEEDS_DIAMOND_TOOL.contains(block.namespace())) return false;
+		if (miningLevel < ToolTier.IRON.getMiningLevel() && GameTagInstances.NEEDS_IRON_TOOL.contains(block.namespace())) return false;
+		if (miningLevel < ToolTier.STONE.getMiningLevel() && GameTagInstances.NEEDS_STONE_TOOL.contains(block.namespace())) return false;
 		
 		return getEffectiveTag(material).contains(block.namespace());
 	}
 	
 	private Tag getEffectiveTag(Material material) {
-		TagManager tags = MinecraftServer.getTagManager();
-		if (material.name().contains("pickaxe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/pickaxe"));
-		if (material.name().contains("axe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/axe"));
-		if (material.name().contains("hoe")) return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/hoe"));
-		else return Objects.requireNonNull(tags.getTag(Tag.BasicType.BLOCKS, "minecraft:mineable/shovel"));
+		if (material.name().contains("pickaxe")) return GameTagInstances.MINEABLE_PICKAXE;
+		if (material.name().contains("axe")) return GameTagInstances.MINEABLE_AXE;
+		if (material.name().contains("hoe")) return GameTagInstances.MINEABLE_HOE;
+		else return GameTagInstances.MINEABLE_SHOVEL;
 	}
 }
