@@ -27,7 +27,7 @@ class CustomPlayerDiggingListener {
 		final Block block = instance.getBlock(blockPosition);
 		PlayerDiggingActionEvent playerDiggingActionEvent = new PlayerDiggingActionEvent(player, block, blockPosition, status);
 		EventDispatcher.call(playerDiggingActionEvent);
-		if (playerDiggingActionEvent.getStatus() == null) {
+		if (playerDiggingActionEvent.getHandler() == null) {
 			PlayerDiggingListener.playerDiggingListener(packet, player); // Delegate to minestom default
 			return;
 		}
