@@ -217,9 +217,6 @@ class BlockBreakManager {
 	}
 	
 	private double getMiningSpeedMultiplier(Material material, Block block) {
-		ToolTier tier = MinestomBlocks.getToolTier(material);
-		if (tier == null) return 1.0;
-		
 		if (material.name().contains("sword")) return block.compare(Block.COBWEB) ? 15.0f : 1.0f;
 		if (material.name().contains("shears")) {
 			if (block.compare(Block.COBWEB) || block.name().contains("leaves")) {
@@ -232,6 +229,9 @@ class BlockBreakManager {
 				return 1.0;
 			}
 		}
+		
+		ToolTier tier = MinestomBlocks.getToolTier(material);
+		if (tier == null) return 1.0;
 		
 		return getEffectiveTag(material).contains(block.namespace()) ? tier.getMiningSpeed() : 1.0;
 	}
