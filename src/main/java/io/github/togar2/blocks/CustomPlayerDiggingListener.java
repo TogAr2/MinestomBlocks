@@ -7,7 +7,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.listener.PlayerDiggingListener;
 import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
-import net.minestom.server.network.packet.server.play.AcknowledgePlayerDiggingPacket;
+import net.minestom.server.network.packet.server.play.AcknowledgeBlockChangePacket;
 
 @SuppressWarnings("UnstableApiUsage")
 class CustomPlayerDiggingListener {
@@ -32,15 +32,9 @@ class CustomPlayerDiggingListener {
 			return;
 		}
 		
-		DiggingResult diggingResult = playerDiggingActionEvent.getHandler().handle(player, instance, blockPosition);
+		playerDiggingActionEvent.getHandler().handle(player, instance, blockPosition);
 		
 		// Acknowledge start/cancel/finish digging status
-		if (diggingResult != null) {
-			player.sendPacket(new AcknowledgePlayerDiggingPacket(blockPosition, diggingResult.block,
-					status, diggingResult.success));
-		}
-	}
-	
-	public record DiggingResult(Block block, boolean success) {
+		player.sendPacket(new AcknowledgeBlockChangePacket(packet.sequence()));
 	}
 }

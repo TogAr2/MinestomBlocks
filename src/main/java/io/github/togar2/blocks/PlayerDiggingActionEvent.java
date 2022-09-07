@@ -64,6 +64,6 @@ public class PlayerDiggingActionEvent implements PlayerEvent, EntityInstanceEven
 	
 	@FunctionalInterface
 	public interface Handler {
-		CustomPlayerDiggingListener.DiggingResult handle(Player player, Instance instance, Point blockPosition);
+		void handle(Player player, Instance instance, Point blockPosition);
 	}
 }

@@ -13,9 +13,8 @@ import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.Enchantment;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
-import net.minestom.server.network.packet.server.play.AcknowledgePlayerDiggingPacket;
 import net.minestom.server.network.packet.server.play.BlockBreakAnimationPacket;
+import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.server.potion.PotionEffect;
 import net.minestom.server.potion.TimedPotion;
 import org.jetbrains.annotations.NotNull;
@@ -61,17 +60,23 @@ class BlockBreakManager {
 		}
 	}
 	
-	public CustomPlayerDiggingListener.DiggingResult startDigging(Player player, Instance instance, Point blockPosition) {
+	public void startDigging(Player player, Instance instance, Point blockPosition) {
 		final Block block = instance.getBlock(blockPosition);
 		final GameMode gameMode = player.getGameMode();
 		
 		// Prevent spectators and check players in adventure mode
-		if (shouldPreventBreaking(player, block)) return new CustomPlayerDiggingListener.DiggingResult(block, false);
-		if (gameMode == GameMode.CREATIVE) return breakBlock(instance, player, blockPosition, block);
+		if (shouldPreventBreaking(player, block)) {
+			player.sendPacket(new BlockChangePacket(blockPosition, instance.getBlock(blockPosition)));
+		}
+		
+		if (gameMode == GameMode.CREATIVE) {
+			breakBlock(instance, player, blockPosition, block);
+			return;
+		}
 		
 		PlayerStartDiggingEvent playerStartDiggingEvent = new PlayerStartDiggingEvent(player, block, blockPosition);
 		EventDispatcher.call(playerStartDiggingEvent);
-		if (playerStartDiggingEvent.isCancelled()) return new CustomPlayerDiggingListener.DiggingResult(block, false);
+		if (playerStartDiggingEvent.isCancelled()) return;
 		
 		// Survival digging
 		miningStartTime = tickCounter;
@@ -81,35 +86,35 @@ class BlockBreakManager {
 		}
 		if (player.isInstantBreak() || (!block.isAir() && delta >= 1)) {
 			// Instant break
-			return breakBlock(instance, player, blockPosition, block);
+			breakBlock(instance, player, blockPosition, block);
 		} else {
 			if (mining) {
 				// Cancel previous
-				player.sendPacket(new AcknowledgePlayerDiggingPacket(blockPosition, instance.getBlock(miningPos),
-						ClientPlayerDiggingPacket.Status.STARTED_DIGGING, false));
+				player.sendPacket(new BlockChangePacket(miningPos, instance.getBlock(miningPos)));
 			}
 			
 			mining = true;
 			miningPos = blockPosition;
 			blockBreakingStage = (byte) (delta * 10);
 			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, blockBreakingStage));
-			
-			return new CustomPlayerDiggingListener.DiggingResult(block, true);
 		}
 	}
 	
-	public CustomPlayerDiggingListener.DiggingResult finishDigging(Player player, Instance instance, Point blockPosition) {
+	public void finishDigging(Player player, Instance instance, Point blockPosition) {
 		final Block block = instance.getBlock(blockPosition);
 		
-		if (block.isAir() || !blockPosition.equals(miningPos) || shouldPreventBreaking(player, block))
-			return new CustomPlayerDiggingListener.DiggingResult(block, false);
+		if (block.isAir() || !blockPosition.equals(miningPos) || shouldPreventBreaking(player, block)) {
+			player.sendPacket(new BlockChangePacket(blockPosition, instance.getBlock(blockPosition)));
+			return;
+		}
 		
 		int ticksMining = tickCounter - miningStartTime;
 		double progress = getBlockBreakingProgress(player, block) * (ticksMining + 1);
 		if (progress > 0.7) {
 			mining = false;
 			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, (byte) -1));
-			return breakBlock(instance, player, blockPosition, block);
+			breakBlock(instance, player, blockPosition, block);
+			return;
 		}
 		if (!failedToMine) {
 			mining = false;
@@ -118,15 +123,12 @@ class BlockBreakManager {
 			failedMiningStartTime = miningStartTime;
 		}
 		
-		return new CustomPlayerDiggingListener.DiggingResult(block, false);
+		player.sendPacket(new BlockChangePacket(blockPosition, instance.getBlock(blockPosition)));
 	}
 	
-	public CustomPlayerDiggingListener.DiggingResult cancelDigging(Player player, Instance instance, Point blockPosition) {
+	public void cancelDigging(Player player, Instance instance, Point blockPosition) {
 		mining = false;
 		player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), blockPosition, (byte) -1));
-		
-		final Block block = instance.getBlock(blockPosition);
-		return new CustomPlayerDiggingListener.DiggingResult(block, true);
 	}
 	
 	private boolean shouldPreventBreaking(@NotNull Player player, Block block) {
@@ -136,17 +138,14 @@ class BlockBreakManager {
 		} else if (player.getGameMode() == GameMode.ADVENTURE) {
 			// Check if the item can break the block with the current item
 			final ItemStack itemInMainHand = player.getItemInMainHand();
-			return !itemInMainHand.meta().getCanDestroy().contains(block);
+			return !itemInMainHand.meta().getCanDestroy().contains(block.name());
 		}
 		
 		return false;
 	}
 	
-	private CustomPlayerDiggingListener.DiggingResult breakBlock(Instance instance,
-	                                                              Player player,
-	                                                              Point blockPosition, Block previousBlock) {
+	private void breakBlock(Instance instance, Player player, Point blockPosition, Block previousBlock) {
 		final boolean success = instance.breakBlock(player, blockPosition);
-		final Block updatedBlock = instance.getBlock(blockPosition);
 		if (!success) {
 			if (previousBlock.isSolid()) {
 				final Pos playerPosition = player.getPosition();
@@ -156,7 +155,6 @@ class BlockBreakManager {
 				}
 			}
 		}
-		return new CustomPlayerDiggingListener.DiggingResult(updatedBlock, success);
 	}
 	
 	private double continueMining(Player player, Block block, Point pos, int startTime) {

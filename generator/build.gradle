@@ -16,6 +16,6 @@ repositories {
 dependencies {
     implementation rootProject
 
-    implementation 'com.github.Minestom:Minestom:f5f323fef9'
-    implementation 'de.articdive:articdata:1.18.2-25e366e2'
+    implementation 'com.github.Minestom:Minestom:fc90fe8852'
+    implementation 'de.articdive:articdata:1.19-aaa3687c'
 }
