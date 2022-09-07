@@ -1,6 +1,7 @@
 # MinestomBlocks
 
 [![license](https://img.shields.io/github/license/TogAr2/MinestomBlocks.svg?style=flat-square)](LICENSE)
+[![platform](https://img.shields.io/badge/platform-Minestom-ff69b4?style=flat-square)](https://github.com/Minestom/Minestom)
 
 MinestomBlocks is a library for Minestom. It adds block sounds (e.g., placement and step) and block breaking animation.
 
