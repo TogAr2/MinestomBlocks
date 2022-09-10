@@ -22,8 +22,8 @@ public class Generator {
 		Files.deleteIfExists(Path.of("./generated-item-tiers.txt"));
 		
 		try (
-				InputStream blockStream = Generator.class.getResourceAsStream("/1_18_2_blocks.json");
-				InputStream itemStream = Generator.class.getResourceAsStream("/1_18_2_items.json");
+				InputStream blockStream = Generator.class.getResourceAsStream("/1_19_blocks.json");
+				InputStream itemStream = Generator.class.getResourceAsStream("/1_19_items.json");
 				OutputStream blockOutputStream = new FileOutputStream("./generated-block-groups.txt");
 				OutputStream itemOutputStream = new FileOutputStream("./generated-item-tiers.txt");
 				OutputStreamWriter blockWriter = new OutputStreamWriter(blockOutputStream);
@@ -99,19 +99,27 @@ public class Generator {
 							.replaceAll("_hit", ".hit"));
 					
 					if (placeSound == null && placeSoundId.endsWith("_PLANTED")) {
-						// Planted are the only exception
+						// Planted is an exception
 						placeSound = SoundEvent.fromNamespaceId("item." + placeSoundId.toLowerCase(Locale.ROOT)
 								.replaceAll("_planted", ".plant"));
 					}
 					
-					if (breakSound == null || stepSound == null || fallSound == null || placeSound == null || hitSound == null) {
+					BlockSoundGroup group;
+					if (placeSound == null && placeSoundId.contains("SCULK_BLOCK")) {
+						// Sculk is an exception
+						group = BlockSoundGroup.SCULK;
+					} else if (stepSound == null && stepSoundId.contains("FROGSPAWN")){
+						// Either mojang can't spell or something's wrong with articdata?
+						group = BlockSoundGroup.FROGSPAWN;
+					} else if (breakSound == null || stepSound == null || fallSound == null || placeSound == null || hitSound == null) {
 						System.err.println("Could not find sounds: " + breakSoundId + " " + stepSoundId + " "
 								+ fallSoundId + " " + placeSoundId + " " + hitSoundId);
 						continue;
+					} else {
+						group = new BlockSoundGroup(volume, pitch, breakSound, stepSound,
+								placeSound, hitSound, fallSound);
 					}
 					
-					BlockSoundGroup group = new BlockSoundGroup(volume, pitch, breakSound, stepSound,
-							placeSound, hitSound, fallSound);
 					if (BlockSoundGroup.STONE.equals(group)) continue; // Stone is the default
 					
 					String groupFieldName = null;
