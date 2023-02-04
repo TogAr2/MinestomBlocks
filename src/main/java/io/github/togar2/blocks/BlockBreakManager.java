@@ -10,6 +10,7 @@ import net.minestom.server.event.player.PlayerStartDiggingEvent;
 import net.minestom.server.gamedata.tags.Tag;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.item.Enchantment;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
@@ -26,6 +27,7 @@ class BlockBreakManager {
 	private boolean mining;
 	private int miningStartTime;
 	private Point miningPos = Vec.ZERO;
+	private BlockFace miningFace = null;
 	private int tickCounter;
 	private boolean failedToMine;
 	private Point failedMiningPos = Vec.ZERO;
@@ -45,7 +47,7 @@ class BlockBreakManager {
 				double progress = continueMining(player, block, failedMiningPos, failedMiningStartTime);
 				if (progress >= 1) {
 					failedToMine = false;
-					breakBlock(instance, player, failedMiningPos, block);
+					breakBlock(instance, player, failedMiningPos, block, miningFace);
 				}
 			}
 		} else if (mining) {
@@ -60,7 +62,7 @@ class BlockBreakManager {
 		}
 	}
 	
-	public void startDigging(Player player, Instance instance, Point blockPosition) {
+	public void startDigging(Player player, Instance instance, Point blockPosition, BlockFace blockFace) {
 		final Block block = instance.getBlock(blockPosition);
 		final GameMode gameMode = player.getGameMode();
 		
@@ -70,11 +72,11 @@ class BlockBreakManager {
 		}
 		
 		if (gameMode == GameMode.CREATIVE) {
-			breakBlock(instance, player, blockPosition, block);
+			breakBlock(instance, player, blockPosition, block, blockFace);
 			return;
 		}
 		
-		PlayerStartDiggingEvent playerStartDiggingEvent = new PlayerStartDiggingEvent(player, block, blockPosition);
+		PlayerStartDiggingEvent playerStartDiggingEvent = new PlayerStartDiggingEvent(player, block, blockPosition, blockFace);
 		EventDispatcher.call(playerStartDiggingEvent);
 		if (playerStartDiggingEvent.isCancelled()) return;
 		
@@ -86,7 +88,7 @@ class BlockBreakManager {
 		}
 		if (player.isInstantBreak() || (!block.isAir() && delta >= 1)) {
 			// Instant break
-			breakBlock(instance, player, blockPosition, block);
+			breakBlock(instance, player, blockPosition, block, blockFace);
 		} else {
 			if (mining) {
 				// Cancel previous
@@ -95,12 +97,13 @@ class BlockBreakManager {
 			
 			mining = true;
 			miningPos = blockPosition;
+			miningFace = blockFace;
 			blockBreakingStage = (byte) (delta * 10);
 			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, blockBreakingStage));
 		}
 	}
 	
-	public void finishDigging(Player player, Instance instance, Point blockPosition) {
+	public void finishDigging(Player player, Instance instance, Point blockPosition, BlockFace blockFace) {
 		final Block block = instance.getBlock(blockPosition);
 		
 		if (block.isAir() || !blockPosition.equals(miningPos) || shouldPreventBreaking(player, block)) {
@@ -113,7 +116,7 @@ class BlockBreakManager {
 		if (progress > 0.7) {
 			mining = false;
 			player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), miningPos, (byte) -1));
-			breakBlock(instance, player, blockPosition, block);
+			breakBlock(instance, player, blockPosition, block, blockFace);
 			return;
 		}
 		if (!failedToMine) {
@@ -126,7 +129,7 @@ class BlockBreakManager {
 		player.sendPacket(new BlockChangePacket(blockPosition, instance.getBlock(blockPosition)));
 	}
 	
-	public void cancelDigging(Player player, Instance instance, Point blockPosition) {
+	public void cancelDigging(Player player, Instance instance, Point blockPosition, BlockFace blockFace) {
 		mining = false;
 		player.sendPacketToViewers(new BlockBreakAnimationPacket(player.getEntityId(), blockPosition, (byte) -1));
 	}
@@ -144,8 +147,8 @@ class BlockBreakManager {
 		return false;
 	}
 	
-	private void breakBlock(Instance instance, Player player, Point blockPosition, Block previousBlock) {
-		final boolean success = instance.breakBlock(player, blockPosition);
+	private void breakBlock(Instance instance, Player player, Point blockPosition, Block previousBlock, BlockFace blockFace) {
+		final boolean success = instance.breakBlock(player, blockPosition, blockFace);
 		if (!success) {
 			if (previousBlock.isSolid()) {
 				final Pos playerPosition = player.getPosition();

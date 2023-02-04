@@ -7,6 +7,7 @@ import net.minestom.server.event.trait.EntityInstanceEvent;
 import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
 import org.jetbrains.annotations.NotNull;
 
@@ -64,6 +65,6 @@ public class PlayerDiggingActionEvent implements PlayerEvent, EntityInstanceEven
 	
 	@FunctionalInterface
 	public interface Handler {
-		void handle(Player player, Instance instance, Point blockPosition);
+		void handle(Player player, Instance instance, Point blockPosition, BlockFace blockFace);
 	}
 }

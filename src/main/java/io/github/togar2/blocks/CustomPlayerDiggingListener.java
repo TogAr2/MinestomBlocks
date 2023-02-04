@@ -32,7 +32,7 @@ class CustomPlayerDiggingListener {
 			return;
 		}
 		
-		playerDiggingActionEvent.getHandler().handle(player, instance, blockPosition);
+		playerDiggingActionEvent.getHandler().handle(player, instance, blockPosition, packet.blockFace());
 		
 		// Acknowledge start/cancel/finish digging status
 		player.sendPacket(new AcknowledgeBlockChangePacket(packet.sequence()));
