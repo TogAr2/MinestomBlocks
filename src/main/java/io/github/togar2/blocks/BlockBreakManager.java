@@ -173,7 +173,7 @@ class BlockBreakManager {
 	
 	private double getBlockBreakingProgress(Player player, Block block) {
 		double hardness = block.registry().hardness();
-		if (hardness == -1 || hardness == 0) return 0;
+		if (hardness == -1 || hardness == 0) return 1;
 		int division = (!MinestomBlocks.requiresTool(block)
 				|| isItemEffective(player.getItemInMainHand().material(), block)) ? 30 : 100;
 		return getBlockBreakingSpeed(player, block) / hardness / (double) division;
