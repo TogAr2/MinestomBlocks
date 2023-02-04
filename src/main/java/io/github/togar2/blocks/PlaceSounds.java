@@ -1,14 +1,14 @@
 package io.github.togar2.blocks;
 
 import net.kyori.adventure.sound.Sound;
-import net.minestom.server.event.EventFilter;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerBlockPlaceEvent;
-import net.minestom.server.event.trait.PlayerEvent;
+import net.minestom.server.event.trait.PlayerInstanceEvent;
 
 class PlaceSounds {
-	public static EventNode<PlayerEvent> node() {
-		EventNode<PlayerEvent> node = EventNode.type("blocks-place-sound", EventFilter.PLAYER);
+	@SuppressWarnings("UnstableApiUsage")
+	public static EventNode<PlayerInstanceEvent> node() {
+		EventNode<PlayerInstanceEvent> node = EventNode.type("blocks-place-sound", MinestomBlocks.PLAYER_INSTANCE_FILTER);
 		
 		node.addListener(PlayerBlockPlaceEvent.class, event -> {
 			BlockSoundGroup group = MinestomBlocks.getSoundGroup(event.getBlock());

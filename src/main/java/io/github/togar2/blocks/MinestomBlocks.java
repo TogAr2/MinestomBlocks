@@ -1,10 +1,12 @@
 package io.github.togar2.blocks;
 
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventFilter;
 import net.minestom.server.event.EventNode;
-import net.minestom.server.event.trait.EntityEvent;
-import net.minestom.server.event.trait.PlayerEvent;
+import net.minestom.server.event.trait.EntityInstanceEvent;
+import net.minestom.server.event.trait.PlayerInstanceEvent;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
@@ -13,11 +15,20 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings("UnstableApiUsage")
 public class MinestomBlocks {
+	public static final EventFilter<EntityInstanceEvent, Entity> ENTITY_INSTANCE_FILTER =
+			EventFilter.from(EntityInstanceEvent.class, Entity.class, EntityInstanceEvent::getEntity);
+	public static final EventFilter<PlayerInstanceEvent, Player> PLAYER_INSTANCE_FILTER =
+			EventFilter.from(PlayerInstanceEvent.class, Player.class, PlayerInstanceEvent::getPlayer);
+	
 	private static final Logger LOGGER = LoggerFactory.getLogger(MinestomBlocks.class);
 	private static final Map<Block, BlockSoundGroup> BLOCK_SOUND_GROUPS = new HashMap<>();
 	private static final Map<Block, Boolean> REQUIRES_TOOL = new HashMap<>();
@@ -35,8 +46,8 @@ public class MinestomBlocks {
 		return TOOL_TIER.get(material);
 	}
 	
-	public static EventNode<EntityEvent> events() {
-		EventNode<EntityEvent> node = EventNode.type("minestom-blocks", EventFilter.ENTITY);
+	public static EventNode<EntityInstanceEvent> events() {
+		EventNode<EntityInstanceEvent> node = EventNode.type("minestom-blocks", ENTITY_INSTANCE_FILTER);
 		node.addChild(fallSounds());
 		node.addChild(placeSounds());
 		node.addChild(moveSounds());
@@ -45,19 +56,19 @@ public class MinestomBlocks {
 		return node;
 	}
 	
-	public static EventNode<EntityEvent> fallSounds() {
+	public static EventNode<EntityInstanceEvent> fallSounds() {
 		return FallSounds.node();
 	}
 	
-	public static EventNode<PlayerEvent> placeSounds() {
+	public static EventNode<PlayerInstanceEvent> placeSounds() {
 		return PlaceSounds.node();
 	}
 	
-	public static EventNode<PlayerEvent> moveSounds() {
+	public static EventNode<PlayerInstanceEvent> moveSounds() {
 		return MoveSounds.node();
 	}
 	
-	public static EventNode<PlayerEvent> breakAnimation() {
+	public static EventNode<PlayerInstanceEvent> breakAnimation() {
 		return BreakAnimation.node();
 	}
 	

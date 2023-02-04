@@ -2,16 +2,16 @@ package io.github.togar2.blocks;
 
 import net.kyori.adventure.sound.Sound;
 import net.minestom.server.entity.Entity;
-import net.minestom.server.event.EventFilter;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityDamageEvent;
-import net.minestom.server.event.trait.EntityEvent;
+import net.minestom.server.event.trait.EntityInstanceEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 
 class FallSounds {
-	public static EventNode<EntityEvent> node() {
-		EventNode<EntityEvent> node = EventNode.type("block-fall-sounds", EventFilter.ENTITY);
+	@SuppressWarnings("UnstableApiUsage")
+	public static EventNode<EntityInstanceEvent> node() {
+		EventNode<EntityInstanceEvent> node = EventNode.type("block-fall-sounds", MinestomBlocks.ENTITY_INSTANCE_FILTER);
 		
 		node.addListener(EntityDamageEvent.class, event -> {
 			if (event.getDamageType().getIdentifier().contains("fall")

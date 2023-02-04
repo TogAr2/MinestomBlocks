@@ -3,8 +3,7 @@ package io.github.togar2.blocks;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.trait.BlockEvent;
-import net.minestom.server.event.trait.EntityInstanceEvent;
-import net.minestom.server.event.trait.PlayerEvent;
+import net.minestom.server.event.trait.PlayerInstanceEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockFace;
@@ -12,7 +11,7 @@ import net.minestom.server.network.packet.client.play.ClientPlayerDiggingPacket;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("UnstableApiUsage")
-public class PlayerDiggingActionEvent implements PlayerEvent, EntityInstanceEvent, BlockEvent {
+public class PlayerDiggingActionEvent implements PlayerInstanceEvent, BlockEvent {
 	private final Player player;
 	private final Block block;
 	private final Point blockPosition;

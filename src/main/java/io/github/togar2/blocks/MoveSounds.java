@@ -4,10 +4,9 @@ import net.kyori.adventure.sound.Sound;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
-import net.minestom.server.event.EventFilter;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerMoveEvent;
-import net.minestom.server.event.trait.PlayerEvent;
+import net.minestom.server.event.trait.PlayerInstanceEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.tag.Tag;
@@ -17,8 +16,9 @@ import java.util.Objects;
 class MoveSounds {
 	private static final Tag<Double> DISTANCE_TRAVELED = Tag.Double("distance-traveled");
 	
-	public static EventNode<PlayerEvent> node() {
-		EventNode<PlayerEvent> node = EventNode.type("blocks-move-sounds", EventFilter.PLAYER);
+	@SuppressWarnings("UnstableApiUsage")
+	public static EventNode<PlayerInstanceEvent> node() {
+		EventNode<PlayerInstanceEvent> node = EventNode.type("blocks-move-sounds", MinestomBlocks.PLAYER_INSTANCE_FILTER);
 		
 		node.addListener(PlayerMoveEvent.class, event -> {
 			Player player = event.getPlayer();
